@@ -145,7 +145,7 @@ class Zone extends EventEmitter {
             if (fadeTime == 0) {
                 if (muted) {
                     this._preMuteVolume = this.getVolume();
-                    this.setVolume(2, false, true);
+                    this.setVolume(0, false, true);
                 }
                 else {
                     this.setVolume(this._preMuteVolume, false, true);
