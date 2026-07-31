@@ -41,9 +41,7 @@ class Client extends EventEmitter {
         const packet = createPacket(packetType, data);
 
         if (packet !== undefined) {
-            console.info("DEBUG: Recieved packet " + packet.constructor.name + " from " + this.getAddress());
-
-            
+            //console.info(`DEBUG: Recieved packet ${packet.constructor.name} hex ${data.toString('hex')}  from ${this.getAddress()}`)
 
             if (packet.getID() == PacketC2SIntent.ID) {
                 this._intent = packet.getIntent();

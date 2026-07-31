@@ -234,7 +234,7 @@ class RNet extends EventEmitter {
                             volume
                         )
                     );
-                    zone.requestInfo();
+                    //zone.requestInfo();
                 }
                 this.emit("volume", zone, volume);
             })
@@ -253,7 +253,7 @@ class RNet extends EventEmitter {
                             sourceID
                         )
                     );
-                    zone.requestInfo();
+                    //zone.requestInfo();
                 }
 
                 let source = this.getSource(sourceID);
@@ -280,7 +280,7 @@ class RNet extends EventEmitter {
                             value
                         )
                     );
-                    zone.requestInfo();
+                    //zone.requestInfo();
                 }
                 this.emit("parameter", zone, parameterID, value);
             });
@@ -627,7 +627,7 @@ class RNet extends EventEmitter {
     _receivedRNetPacket(packet) {
         //console.log("DEBUG: Received packet " + packet.constructor.name + " from RNet.");
         try {
-            console.log(`DEBUG: Received RNet ${packet.constructor.name}, cntlr${packet.getControllerID()} zone${packet.getZoneID()}`);
+            //console.log(`DEBUG: Received RNet ${packet.constructor.name}, cntlr${packet.getControllerID()} zone${packet.getZoneID()}`);
         } catch(e) {
                 console.log(`DEBUG: Received RNet ${packet.constructor.name}`)
         }
