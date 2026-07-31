@@ -139,6 +139,7 @@ server.once("error", function(error) {
     }
 })
 .on("packet", function(client, packet) {
+    //console.log(`Received C2S: ${packet.toString('hex')}`)
     switch (packet.getID())
     {
         case PacketC2SAllPower.ID:
@@ -158,7 +159,7 @@ server.once("error", function(error) {
         }
         case PacketC2SMute.ID:
         {
-            if (!packet.getControllerID()) {
+            if (packet.getControllerID() == null) {
                 if (packet.getMuteState() == PacketC2SMute.MUTE_TOGGLE) {
                     rNet.setAllMute(!rNet.getAllMute(), packet.getFadeTime());
                 }
@@ -173,7 +174,7 @@ server.once("error", function(error) {
                         zone.setMute(!zone.getMuted(), packet.getFadeTime());
                     }
                     else {
-                        zone.setMute(zone.getMuted() == 0x01, packet.getFadeTime());
+                        zone.setMute(packet.getMuteState() == 0x01, packet.getFadeTime());
                     }
                 }
                 else
@@ -293,7 +294,7 @@ server.once("error", function(error) {
         case PacketC2SZoneVolume.ID:
         {
             const zone = rNet.getZone(packet.getControllerID(), packet.getZoneID());
-            if (zone != null)
+            if (zone != null) 
                 zone.setVolume(packet.getVolume());
             else
                 console.warn("Received request to set volume of unknown zone %d-%d", packet.getControllerID(), packet.getZoneID());
