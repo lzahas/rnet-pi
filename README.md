@@ -1,6 +1,15 @@
 RNET Pi
 ===
-Using the RS-232 "automation" port on older Russound whole home audio systems, we can control them using a low-power computer such as a Raspberry Pi via a USB to serial adapter in order to retrofit modern day "smart" capabilites. RNET-Pi is a Node.JS server created to act as a proxy between smart devices and these legacy audio systems.
+This project is a fork of Zach Cheatham's [RNet Pi server](https://github.com/zachcheatham/rnet-pi), but adds some features and fixes: 
+- Most fixes and changes in [placidorevilla's fork](https://github.com/placidorevilla/rnet-pi).
+- Fixed some bugs with handling multiple controllers.
+- Fixed some bugs with mute handling.
+
+Note that this fork was built primarily to work with Node-RED with the RNet-Pi palette, and has not been tested extensively with the Chrome app. 
+
+Overview
+---
+Using the RS-232 "automation" port on older Russound whole home audio systems, we can control them using a low-power computer such as a Raspberry Pi via a USB to serial adapter in order to retrofit modern day "smart" capabilities. RNET-Pi is a Node.JS server created to act as a proxy between smart devices and these legacy audio systems.
 
 Features
 ---
@@ -11,7 +20,7 @@ Features
   - Display currently playing media on wall plate displays.
   - Control Chromecast using existing wall plates.
   - (Configurable) Automatically activate zones and switch to appropriate source when Chromecast begins playing media.
-  - (Configurable) Automaticallly turn off zones using a Cast device when media is no longer being played.
+  - (Configurable) Automatically turn off zones using a Cast device when media is no longer being played.
 
 ### Planned Features
  - Sonos Connect support.
