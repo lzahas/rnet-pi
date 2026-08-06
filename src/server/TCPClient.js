@@ -47,7 +47,7 @@ class TCPClient extends Client {
 
     _recvData(data) {
         const incomingBuffer = SmartBuffer.fromBuffer(data);
-
+        console.log(`Received TCP: hex ${incomingBuffer.toString('hex')}`)
         while (incomingBuffer.remaining() > 0) {
             if (this._pendingBytesRemaining === false) {
                 this._pendingPacketType = incomingBuffer.readUInt8();

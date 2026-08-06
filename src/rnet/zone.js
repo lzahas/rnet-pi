@@ -237,7 +237,6 @@ class Zone extends EventEmitter {
     requestInfo() {
         this._rNet.sendData(new RequestDataPacket(this._ctrllrID, this._zoneID, RequestDataPacket.DATA_TYPE.ZONE_INFO));
         this._rNet.sendData(new RequestParameterPacket(this._ctrllrID, this._zoneID, ExtraZoneParam.TURN_ON_VOLUME));
-        // log message detail for zone 0 of both controllers
     }
 
     requestBasicInfo() {
