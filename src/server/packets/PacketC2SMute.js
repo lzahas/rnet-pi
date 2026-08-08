@@ -12,10 +12,10 @@ const PacketC2S = require("./PacketC2S");
  */
 class PacketC2SMute extends PacketC2S {
     parseData() {
+        this._controllerID = this._buffer.readUInt8();
+        this._zoneID = this._buffer.readUInt8();
         this._muteState = this._buffer.readUInt8();
         this._fadeTime = this._buffer.readUInt16LE();
-        this._controllerID = false;
-        this._zoneID = false;
 
         if (this._buffer.remaining() > 1) {
             this._controllerID = this._buffer.readUInt8();

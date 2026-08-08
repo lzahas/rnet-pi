@@ -95,6 +95,7 @@ class Zone extends EventEmitter {
                 }
 
                 this._volume = volume;
+                console.log(`zone.js setting volume. Zone: ${this._ctrllrID}:${this._zoneID}`)
                 this.emit("volume", volume, rNetTriggered);
             }
 
@@ -137,6 +138,7 @@ class Zone extends EventEmitter {
     }
 
     setMute(muted, fadeTime=0) {
+        console.log(`DEBUG: setMute: current=${this._mute}  setting=${muted}`)
         if (muted != this._mute) {
             this._mute = muted;
 
@@ -147,13 +149,13 @@ class Zone extends EventEmitter {
                 }
                 else {
                     this.setVolume(this._preMuteVolume, false, true);
-                    this._preMuteVolume = 0;
+                    this._preMuteVolume = 2;
                 }
             }
             else {
                 if (muted) {
                     this._preMuteVolume = this.getVolume();
-                    animate({v: this._preMuteVolume / 2}, {v: 0}, {
+                    animate({v: this._preMuteVolume / 2}, {v: 2}, {
                         duration: fadeTime,
                         step: (fo) => {
                             const vol = Math.round(fo.v) * 2;
@@ -162,7 +164,7 @@ class Zone extends EventEmitter {
                     });
                 }
                 else {
-                    animate({v: 0}, {v: this._preMuteVolume / 2}, {
+                    animate({v: 2}, {v: this._preMuteVolume / 2}, {
                         duration: fadeTime,
                         step: (fo) => {
                             const vol = Math.round(fo.v) * 2;

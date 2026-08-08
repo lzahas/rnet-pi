@@ -49,6 +49,7 @@ class Server extends EventEmitter {
 
     broadcastBuffer(buffer) {
         for (let client of this._clients) {
+            console.log(`broadcastBuffer: hex ${buffer.toString('hex')}`)
             client.sendBuffer(buffer);
         }
     }
@@ -104,6 +105,7 @@ class Server extends EventEmitter {
             this.emit("client_connected", client);
         })
         .on("packet", (packet) => {
+            
             this.emit("packet", client, packet);
         });
     }
