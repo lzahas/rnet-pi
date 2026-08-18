@@ -24,7 +24,7 @@ const Source = require("./source");
 const Zone = require("./zone");
 
 class RNet extends EventEmitter {
-    constructor(device) {
+    constructor(device, configPath = '') {
         super();
 
         this._device = device
@@ -35,7 +35,7 @@ class RNet extends EventEmitter {
         this._waitingForHandshake = false;
         this._packetQueue = [];
         this._allMuted = false;
-
+        this._configPath = configPath; // optional path to config files
         this.readConfiguration();
         this.writeConfiguration();
     }
@@ -72,7 +72,7 @@ class RNet extends EventEmitter {
     readConfiguration() {
         var sourceFile;
         try {
-            sourceFile = fs.readFileSync("sources.json");
+            sourceFile = fs.readFileSync(this._configPath + "sources.json");
         }
         catch (e) {}
 
@@ -97,7 +97,7 @@ class RNet extends EventEmitter {
 
         var zonesFile = "";
         try {
-            zonesFile = fs.readFileSync("zones.json");
+            zonesFile = fs.readFileSync(this._configPath + "zones.json");
         }
         catch (e) {}
 
@@ -149,7 +149,7 @@ class RNet extends EventEmitter {
             }
         }
 
-        fs.writeFileSync("sources.json", JSON.stringify(sources));
+        fs.writeFileSync(this._configPath + "sources.json", JSON.stringify(sources));
     }
 
     writeZones() {
@@ -177,7 +177,7 @@ class RNet extends EventEmitter {
             }
         }
 
-        fs.writeFileSync("zones.json", JSON.stringify(zones));
+        fs.writeFileSync(this._configPath + "zones.json", JSON.stringify(zones));
     }
 
     createZone(ctrllrID, zoneID, name, writeConfig=true) {
@@ -553,13 +553,13 @@ class RNet extends EventEmitter {
                 this._packetQueue.push(packet);
             }
             else {
-                console.log(`DEBUG: Sending ${packet.constructor.name} to RNet. ${packet.getBuffer().toString('hex')}`);
+                //console.log(`DEBUG: Sending ${packet.constructor.name} to RNet. ${packet.getBuffer().toString('hex')}`);
                 this._serialPort.write(packet.getBuffer());
                 if (packet.causesResponseWithHandshake()) {
                     //console.log("DEBUG: Now expecting to perform handshake.");
                     this._waitingForHandshake = true;
                     this._waitingForHandshakeTimeout = setTimeout(() => {
-                        console.warn(`Waited for expected handshake for too long. Continuing...  ${this._waitingForHandshake}`);
+                        console.warn(`No handshake response from RNet controller ID ${packet.targetControllerID}. Continuing... ${this._waitingForHandshake}`);
                         this._waitingForHandshake = false;
                         if (this._packetQueue.length > 0) {
                             this.sendData(this._packetQueue.shift(), true);
@@ -599,9 +599,9 @@ class RNet extends EventEmitter {
                     setImmediate(() => {
                         const packet = PacketBuilder.build(buffer);
                         try {
-                            console.log(`Received RNet: zone ${packet.getControllerID()}:${packet.getZoneID()} ${packet.constructor.name}  hex ${buffer.toString('hex')}`);
+                            //console.log(`Received RNet: zone ${packet.getControllerID()}:${packet.getZoneID()} ${packet.constructor.name}  hex ${buffer.toString('hex')}`);
                         } catch (error) {
-                            console.log(`Received RNet: hex ${buffer.toString('hex')}`);
+                            //console.log(`Received RNet: hex ${buffer.toString('hex')}`);
                         }
                         if (packet) {
                             this._receivedRNetPacket(packet);
