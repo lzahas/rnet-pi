@@ -95,7 +95,7 @@ class Zone extends EventEmitter {
                 }
 
                 this._volume = volume;
-                console.log(`zone.js setting volume. Zone: ${this._ctrllrID}:${this._zoneID}`)
+                //console.log(`zone.js setting volume. Zone: ${this._ctrllrID}:${this._zoneID}`)
                 this.emit("volume", volume, rNetTriggered);
             }
 
