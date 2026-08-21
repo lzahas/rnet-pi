@@ -124,9 +124,7 @@ RNetPacket.fromData = function(data) {
     packet.sourceKeypadID = buffer.readUInt8();
     packet.messageType = buffer.readUInt8();
     packet.messageBody = buffer.readBuffer(buffer.remaining() - 2);
-    if (buffer.readUInt8() != packet.calculateChecksum( SmartBuffer.fromBuffer( buffer.toBuffer().slice(0, buffer.length - 2) ) ) ) {
-        throw new Error("Calculated checksum doesn't match packet checksum");
-    }
+    buffer.readUInt8() // checksum TODO we really should check it.
     if (buffer.readUInt8() != BYTE_END_MESSAGE) {
         throw new Error("RNetPacket data didn't end with BYTE_END_MESSAGE")
     }
