@@ -542,6 +542,7 @@ class RNet extends EventEmitter {
                 else {
                     this._waitingForHandshake = false;
                     clearTimeout(this._waitingForHandshakeTimeout);
+                    this.emit('handshake', packet.targetControllerID, true); 
                 }
 
                 if (this._packetQueue.length > 0) {
@@ -560,6 +561,7 @@ class RNet extends EventEmitter {
                     this._waitingForHandshake = true;
                     this._waitingForHandshakeTimeout = setTimeout(() => {
                         console.warn(`No handshake response from RNet controller ID ${packet.targetControllerID}. Continuing... ${this._waitingForHandshake}`);
+                        this.emit('handshake', packet.targetControllerID, false)
                         this._waitingForHandshake = false;
                         if (this._packetQueue.length > 0) {
                             this.sendData(this._packetQueue.shift(), true);
