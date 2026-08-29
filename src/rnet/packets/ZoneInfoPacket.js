@@ -46,7 +46,7 @@ class ZoneInfoPacket extends DataPacket {
     }
 
     getDoNotDisturbMode() {
-        return this.data.readUInt8(8);
+        return this.data.readUInt8(10);
     }
 }
 

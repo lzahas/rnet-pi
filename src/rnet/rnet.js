@@ -24,7 +24,7 @@ const Source = require("./source");
 const Zone = require("./zone");
 
 class RNet extends EventEmitter {
-    constructor(device) {
+    constructor(device, configPath = '') {
         super();
 
         this._device = device
@@ -35,7 +35,7 @@ class RNet extends EventEmitter {
         this._waitingForHandshake = false;
         this._packetQueue = [];
         this._allMuted = false;
-
+        this._configPath = configPath; // optional path to config files
         this.readConfiguration();
         this.writeConfiguration();
     }
@@ -48,19 +48,19 @@ class RNet extends EventEmitter {
             path: this._device,
             baudRate: 19200
         })
-        .on("open", () => {
-            this._connected = true;
-            this.emit("connected");
-            this.requestAllZoneInfo(true);
-        })
-        .on("close", () => {
-            // TODO Start auto-reconnect
-            this._connected = false;
-            this.emit("disconnected");
-        })
-        .on("error", (error) => {
-            this.emit("error", error);
-        })
+            .on("open", () => {
+                this._connected = true;
+                this.emit("connected");
+                this.requestAllZoneInfo(true);
+            })
+            .on("close", () => {
+                // TODO Start auto-reconnect
+                this._connected = false;
+                this.emit("disconnected");
+            })
+            .on("error", (error) => {
+                this.emit("error", error);
+            })
         .on("data", (data) => {this._handleData(data)});
     }
 
@@ -72,7 +72,7 @@ class RNet extends EventEmitter {
     readConfiguration() {
         var sourceFile;
         try {
-            sourceFile = fs.readFileSync("sources.json");
+            sourceFile = fs.readFileSync(this._configPath + "sources.json");
         }
         catch (e) {}
 
@@ -97,7 +97,7 @@ class RNet extends EventEmitter {
 
         var zonesFile = "";
         try {
-            zonesFile = fs.readFileSync("zones.json");
+            zonesFile = fs.readFileSync(this._configPath + "zones.json");
         }
         catch (e) {}
 
@@ -149,7 +149,7 @@ class RNet extends EventEmitter {
             }
         }
 
-        fs.writeFileSync("sources.json", JSON.stringify(sources));
+        fs.writeFileSync(this._configPath + "sources.json", JSON.stringify(sources));
     }
 
     writeZones() {
@@ -177,7 +177,7 @@ class RNet extends EventEmitter {
             }
         }
 
-        fs.writeFileSync("zones.json", JSON.stringify(zones));
+        fs.writeFileSync(this._configPath + "zones.json", JSON.stringify(zones));
     }
 
     createZone(ctrllrID, zoneID, name, writeConfig=true) {
@@ -199,93 +199,93 @@ class RNet extends EventEmitter {
                 this.emit("zone-name", zone, name);
                 this.writeConfiguration();
             })
-            .on("power", (powered, rNetTriggered) => {
-                if (!rNetTriggered) {
-                    this.sendData(
-                        new SetPowerPacket(
-                            zone.getControllerID(),
-                            zone.getZoneID(),
-                            powered
-                        )
-                    );
-                    //zone.requestInfo();
-                }
+                .on("power", (powered, rNetTriggered) => {
+                    if (!rNetTriggered) {
+                        this.sendData(
+                            new SetPowerPacket(
+                                zone.getControllerID(),
+                                zone.getZoneID(),
+                                powered
+                            )
+                        );
+                        //zone.requestInfo();
+                    }
 
-                if (powered) {
-                    let source = this.getSource(zone.getSourceID());
+                    if (powered) {
+                        let source = this.getSource(zone.getSourceID());
+                        if (source) {
+                            if (source.getDescriptiveText() != null) {
+                                if (!source.isDescriptionFromRNet()) {
+                                    this.sendData(new SourceDescriptiveTextPacket(source.getSourceID(), 0, source.getDescriptiveText()));
+                                }
+                            }
+                            else if (source.getOverrideName()) {
+                                this.sendData(new SourceDescriptiveTextPacket(source.getSourceID(), 0, source.getName()));
+                            }
+                        }
+                    }
+
+                    this.emit("power", zone, powered);
+                })
+                .on("volume", (volume, rNetTriggered) => {
+                    if (!rNetTriggered) {
+                        this.sendData(
+                            new SetVolumePacket(
+                                zone.getControllerID(),
+                                zone.getZoneID(),
+                                volume
+                            )
+                        );
+                        //zone.requestInfo();
+                    }
+                    this.emit("volume", zone, volume);
+                })
+                .on("max-volume", (maxVolume) => {
+                    this.emit("max-volume", zone, maxVolume);
+                })
+                .on("mute", (muting) => {
+                    this.emit("mute", zone, muting);
+                })
+                .on("source", (sourceID, rNetTriggered) => {
+                    if (!rNetTriggered) {
+                        this.sendData(
+                            new SetSourcePacket(
+                                zone.getControllerID(),
+                                zone.getZoneID(),
+                                sourceID
+                            )
+                        );
+                        //zone.requestInfo();
+                    }
+
+                    let source = this.getSource(sourceID);
                     if (source) {
                         if (source.getDescriptiveText() != null) {
                             if (!source.isDescriptionFromRNet()) {
-                                this.sendData(new SourceDescriptiveTextPacket(source.getSourceID(), 0, source.getDescriptiveText()));
+                                this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getDescriptiveText()));
                             }
                         }
                         else if (source.getOverrideName()) {
-                            this.sendData(new SourceDescriptiveTextPacket(source.getSourceID(), 0, source.getName()));
+                            this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getName()));
                         }
                     }
-                }
 
-                this.emit("power", zone, powered);
-            })
-            .on("volume", (volume, rNetTriggered) => {
-                if (!rNetTriggered) {
-                    this.sendData(
-                        new SetVolumePacket(
-                            zone.getControllerID(),
-                            zone.getZoneID(),
-                            volume
-                        )
-                    );
-                    //zone.requestInfo();
-                }
-                this.emit("volume", zone, volume);
-            })
-            .on("max-volume", (maxVolume) => {
-                this.emit("max-volume", zone, maxVolume);
-            })
-            .on("mute", (muting) => {
-                this.emit("mute", zone, muting);
-            })
-            .on("source", (sourceID, rNetTriggered) => {
-                if (!rNetTriggered) {
-                    this.sendData(
-                        new SetSourcePacket(
-                            zone.getControllerID(),
-                            zone.getZoneID(),
-                            sourceID
-                        )
-                    );
-                    //zone.requestInfo();
-                }
-
-                let source = this.getSource(sourceID);
-                if (source) {
-                    if (source.getDescriptiveText() != null) {
-                        if (!source.isDescriptionFromRNet()) {
-                            this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getDescriptiveText()));
-                        }
+                    this.emit("source", zone, sourceID);
+                })
+                .on("parameter", (parameterID, value, rNetTriggered) => {
+                    if (!rNetTriggered) {
+                        this.sendData(
+                            new SetParameterPacket(
+                                zone.getControllerID(),
+                                zone.getZoneID(),
+                                parameterID,
+                                value
+                            )
+                        );
+                        //zone.requestInfo();
                     }
-                    else if (source.getOverrideName()) {
-                        this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getName()));
-                    }
-                }
-
-                this.emit("source", zone, sourceID);
-            })
-            .on("parameter", (parameterID, value, rNetTriggered) => {
-                if (!rNetTriggered) {
-                    this.sendData(
-                        new SetParameterPacket(
-                            zone.getControllerID(),
-                            zone.getZoneID(),
-                            parameterID,
-                            value
-                        )
-                    );
-                    //zone.requestInfo();
-                }
-                this.emit("parameter", zone, parameterID, value);
-            });
+                    this.emit("parameter", zone, parameterID, value);
+                });
 
             this.emit("new-zone", zone);
             return zone;
@@ -359,61 +359,61 @@ class RNet extends EventEmitter {
                 this.emit("source-name", source, name, oldName);
                 this.writeSources();
             })
-            .on("type", (type) => {
-                this.emit("source-type", source, type);
-                this.writeSources();
-            })
-            .on("media-metadata", (title, artist, artworkURL) => {
-                this.emit("media-metadata", source, title, artist, artworkURL);
-                console.info("Source #%d (%s) is now playing %s by %s", sourceID, name, title, artist);
-            })
-            .on("media-playing", (playing) => {
-                this.emit("media-playing", source, playing);
-                console.info("Source #%d (%s) play state changed to %s", sourceID, name, playing);
-            })
-            .on("descriptive-text", (message, flashTime, rNetTriggered) => {
-                if (!rNetTriggered) {
-                    this.sendData(new SourceDescriptiveTextPacket(sourceID, flashTime, message));
-                }
-                this.emit("descriptive-text", source, flashTime, message);
-                console.info("Source #%d (%s) published descriptive text: %s", sourceID, name, message);
-            })
-            .on("control", (operation, rNetTriggered) => {
-                if (!rNetTriggered && !source.networkControlled()) {
-                    let zones = source.getZones();
-                    if (zones.length > 0) {
-                        let key = false;
-                        switch (operation) {
-                        case Source.CONTROL_NEXT:
-                            key = KeypadEventPacket.NEXT;
-                            break;
-                        case Source.CONTROL_PREV:
-                            key = KeypadEventPacket.PREVIOUS;
-                            break;
-                        case Source.CONTROL_STOP:
-                            key = KeypadEventPacket.STOP;
-                            break;
-                        case Source.CONTROL_PLAY:
-                            key = KeypadEventPacket.PLAY;
-                            break;
-                        case Source.CONTROL_PAUSE:
-                            key = KeypadEventPacket.PAUSE;
-                            break;
-                        case Source.CONTROL_PLUS:
-                            key = KeypadEventPacket.PLUS;
-                            break;
-                        case Source.CONTROL_MINUS:
-                            key = KeypadEventPacket.MINUS;
-                            break;
-                        }
-
-                        this.sendData(new KeypadEventPacket(zones[0].getControllerID(), zones[0].getZoneID(), key));
+                .on("type", (type) => {
+                    this.emit("source-type", source, type);
+                    this.writeSources();
+                })
+                .on("media-metadata", (title, artist, artworkURL) => {
+                    this.emit("media-metadata", source, title, artist, artworkURL);
+                    console.info("Source #%d (%s) is now playing %s by %s", sourceID, name, title, artist);
+                })
+                .on("media-playing", (playing) => {
+                    this.emit("media-playing", source, playing);
+                    console.info("Source #%d (%s) play state changed to %s", sourceID, name, playing);
+                })
+                .on("descriptive-text", (message, flashTime, rNetTriggered) => {
+                    if (!rNetTriggered) {
+                        this.sendData(new SourceDescriptiveTextPacket(sourceID, flashTime, message));
                     }
-                }
-            })
-            .on("override-name", () => {
-                this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getName()));
-            });
+                    this.emit("descriptive-text", source, flashTime, message);
+                    console.info("Source #%d (%s) published descriptive text: %s", sourceID, name, message);
+                })
+                .on("control", (operation, rNetTriggered) => {
+                    if (!rNetTriggered && !source.networkControlled()) {
+                        let zones = source.getZones();
+                        if (zones.length > 0) {
+                            let key = false;
+                            switch (operation) {
+                                case Source.CONTROL_NEXT:
+                                    key = KeypadEventPacket.NEXT;
+                                    break;
+                                case Source.CONTROL_PREV:
+                                    key = KeypadEventPacket.PREVIOUS;
+                                    break;
+                                case Source.CONTROL_STOP:
+                                    key = KeypadEventPacket.STOP;
+                                    break;
+                                case Source.CONTROL_PLAY:
+                                    key = KeypadEventPacket.PLAY;
+                                    break;
+                                case Source.CONTROL_PAUSE:
+                                    key = KeypadEventPacket.PAUSE;
+                                    break;
+                                case Source.CONTROL_PLUS:
+                                    key = KeypadEventPacket.PLUS;
+                                    break;
+                                case Source.CONTROL_MINUS:
+                                    key = KeypadEventPacket.MINUS;
+                                    break;
+                            }
+
+                            this.sendData(new KeypadEventPacket(zones[0].getControllerID(), zones[0].getZoneID(), key));
+                        }
+                    }
+                })
+                .on("override-name", () => {
+                    this.sendData(new SourceDescriptiveTextPacket(sourceID, 0, source.getName()));
+                });
 
             this.emit("new-source", source);
             return source;
@@ -542,6 +542,7 @@ class RNet extends EventEmitter {
                 else {
                     this._waitingForHandshake = false;
                     clearTimeout(this._waitingForHandshakeTimeout);
+                    this.emit('handshake', packet.targetControllerID, true); 
                 }
 
                 if (this._packetQueue.length > 0) {
@@ -553,13 +554,14 @@ class RNet extends EventEmitter {
                 this._packetQueue.push(packet);
             }
             else {
-                console.log(`DEBUG: Sending ${packet.constructor.name} to RNet. ${packet.getBuffer().toString('hex')}`);
+                //console.log(`DEBUG: Sending ${packet.constructor.name} to RNet. ${packet.getBuffer().toString('hex')}`);
                 this._serialPort.write(packet.getBuffer());
                 if (packet.causesResponseWithHandshake()) {
                     //console.log("DEBUG: Now expecting to perform handshake.");
                     this._waitingForHandshake = true;
                     this._waitingForHandshakeTimeout = setTimeout(() => {
-                        console.warn(`Waited for expected handshake for too long. Continuing...  ${this._waitingForHandshake}`);
+                        console.warn(`No handshake response from RNet controller ID ${packet.targetControllerID}. Continuing... ${this._waitingForHandshake}`);
+                        this.emit('handshake', packet.targetControllerID, false)
                         this._waitingForHandshake = false;
                         if (this._packetQueue.length > 0) {
                             this.sendData(this._packetQueue.shift(), true);
@@ -599,9 +601,9 @@ class RNet extends EventEmitter {
                     setImmediate(() => {
                         const packet = PacketBuilder.build(buffer);
                         try {
-                            console.log(`Received RNet: zone ${packet.getControllerID()}:${packet.getZoneID()} ${packet.constructor.name}  hex ${buffer.toString('hex')}`);
+                            //console.log(`Received RNet: zone ${packet.getControllerID()}:${packet.getZoneID()} ${packet.constructor.name}  hex ${buffer.toString('hex')}`);
                         } catch (error) {
-                            console.log(`Received RNet: hex ${buffer.toString('hex')}`);
+                            //console.log(`Received RNet: hex ${buffer.toString('hex')}`);
                         }
                         if (packet) {
                             this._receivedRNetPacket(packet);
@@ -636,7 +638,7 @@ class RNet extends EventEmitter {
         try {
             //console.log(`DEBUG: Received RNet ${packet.constructor.name}, cntlr${packet.getControllerID()} zone${packet.getZoneID()}`);
         } catch(e) {
-                console.log(`DEBUG: Received RNet ${packet.constructor.name}`)
+            console.log(`DEBUG: Received RNet ${packet.constructor.name}`)
         }
         if (packet.requiresHandshake()) {
             this._waitingForHandshake = true;
